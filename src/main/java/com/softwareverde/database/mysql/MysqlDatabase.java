@@ -78,9 +78,10 @@ public class MysqlDatabase implements Database {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             _connection = DriverManager.getConnection("jdbc:mysql://"+ _url +"/"+ _databaseName +"?user="+ _username +"&password="+ _password +"&useSSL=false&serverTimezone=UTC");
-            _isConnected = true;
+            _isConnected = (_connection != null);
         }
-        catch (final Exception e) {
+        catch (final Exception exception) {
+            exception.printStackTrace();
             _isConnected = false;
         }
     }
@@ -98,8 +99,8 @@ public class MysqlDatabase implements Database {
             try {
                 _connection.setCatalog(databaseName);
             }
-            catch (final SQLException e) {
-                e.printStackTrace();
+            catch (final SQLException exception) {
+                exception.printStackTrace();
             }
         }
     }
@@ -155,8 +156,8 @@ public class MysqlDatabase implements Database {
 
             return results;
         }
-        catch (final SQLException e) {
-            e.printStackTrace();
+        catch (final SQLException exception) {
+            exception.printStackTrace();
             return new ArrayList<Row>();
         }
     }
@@ -202,4 +203,12 @@ public class MysqlDatabase implements Database {
     public void disconnect() {
         try { _connection.close(); } catch (final SQLException e) { }
     }
+
+
+    /**
+     * Require dependencies be loaded at compile-time.
+     */
+    private static final Object[] UNUSED = {
+        com.mysql.jdbc.Driver.class
+    };
 }
