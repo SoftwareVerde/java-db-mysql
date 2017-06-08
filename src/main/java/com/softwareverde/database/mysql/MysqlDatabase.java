@@ -204,11 +204,10 @@ public class MysqlDatabase implements Database {
         try { _connection.close(); } catch (final SQLException e) { }
     }
 
-
     /**
-     * Require dependencies be loaded at compile-time.
+     * Require dependencies be packaged at compile-time.
      */
-    private static final Object[] UNUSED = {
+    private static final Class[] UNUSED = {
         com.mysql.jdbc.Driver.class
     };
 }
