@@ -1,5 +1,5 @@
 group 'com.softwareverde'
-version '1.0.2'
+version '1.0.3'
 
 apply plugin: 'java'
 
@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'com.github.softwareverde', name: 'java-db', version: 'v+'
+    compile group: 'com.github.softwareverde', name: 'java-db', version: 'v1.+'
     compile group: 'com.github.softwareverde', name: 'java-util', version: 'v+'
     compile group: 'mysql', name: 'mysql-connector-java', version: '5.+' // v6.0.4 requires Java 8
 
