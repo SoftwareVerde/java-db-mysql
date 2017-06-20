@@ -18,19 +18,14 @@ public class MysqlRow implements Row {
 
         try {
             final ResultSetMetaData metaData = resultSet.getMetaData();
-            for (int i = 0; i < metaData.getColumnCount(); ++i ) {
-                final String columnName = metaData.getColumnLabel(i+1).toLowerCase(); // metaData.getColumnName(i+1);
-                final String columnValue = resultSet.getString(i+1);
+            for (int i = 0; i < metaData.getColumnCount(); ++i) {
+                final String columnName = metaData.getColumnLabel(i + 1).toLowerCase(); // metaData.getColumnName(i+1);
+                final String columnValue = resultSet.getString(i + 1);
 
                 mysqlRow._columnNames.add(columnName);
                 mysqlRow._columnValues.put(columnName, columnValue);
             }
-        }
-        catch (final SQLException e) { }
-        finally {
-            try { resultSet.close(); }
-            catch (final Exception e) { }
-        }
+        } catch (final SQLException exception) { }
 
         return mysqlRow;
     }
@@ -42,7 +37,7 @@ public class MysqlRow implements Row {
 
     protected String _getString(final String columnName) {
         if (! _columnValues.containsKey(columnName.toLowerCase())) {
-            throw new RuntimeException("Row does not contain column: "+ columnName);
+            throw new IllegalArgumentException("Row does not contain column: "+ columnName);
         }
 
         return _columnValues.get(columnName.toLowerCase());
