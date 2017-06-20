@@ -27,6 +27,10 @@ public class MysqlRow implements Row {
             }
         }
         catch (final SQLException e) { }
+        finally {
+            try { resultSet.close(); }
+            catch (final Exception e) { }
+        }
 
         return mysqlRow;
     }

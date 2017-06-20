@@ -12,26 +12,26 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MysqlDatabaseConnection implements DatabaseConnection<Connection> {
+public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, AutoCloseable {
+    private static final String INVALID_ID = "-1";
+
     private RowFactory _rowFactory = new MysqlRowFactory();
     private Connection _connection;
-    private String _lastInsertId = "-1";
+    private String _lastInsertId = INVALID_ID;
 
     private String _extractInsertId(final PreparedStatement preparedStatement) throws SQLException {
-        final ResultSet resultSet = preparedStatement.getGeneratedKeys();
-
-        final Integer insertId;
-        {
-            if (resultSet.next()) {
-                insertId = resultSet.getInt(1);
+        try (final ResultSet resultSet = preparedStatement.getGeneratedKeys()) {
+            final Integer insertId;
+            {
+                if (resultSet.next()) {
+                    insertId = resultSet.getInt(1);
+                }
+                else {
+                    insertId = null;
+                }
             }
-            else {
-                insertId = null;
-            }
+            return Util.coalesce(insertId, INVALID_ID).toString();
         }
-
-        resultSet.close();
-        return Util.coalesce(insertId, "-1").toString();
     }
 
     private PreparedStatement _prepareStatement(final String query, final String[] parameters) throws SQLException {
@@ -45,14 +45,12 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection> {
     }
 
     private void _executeSql(final String query, final String[] parameters) throws SQLException {
-        try {
-            final PreparedStatement preparedStatement = _prepareStatement(query, parameters);
+        try (final PreparedStatement preparedStatement = _prepareStatement(query, parameters)) {
             preparedStatement.execute();
             _lastInsertId = _extractInsertId(preparedStatement);
-            preparedStatement.close();
         }
         catch (final SQLException exception) {
-            _lastInsertId = null;
+            _lastInsertId = INVALID_ID;
             throw exception;
         }
     }
@@ -68,9 +66,9 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection> {
                 throw new DatabaseException("Attempted to execute DDL statement while disconnected.");
             }
 
-            final Statement statement = _connection.createStatement();
-            statement.execute(query);
-            statement.close();
+            try (final Statement statement = _connection.createStatement()) {
+                statement.execute(query);
+            }
         }
         catch (final SQLException exception) {
             throw new DatabaseException("Error executing DDL statement.", exception);
@@ -109,20 +107,20 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection> {
                 throw new DatabaseException("Attempted to execute query while disconnected.");
             }
 
-            final PreparedStatement preparedStatement = _prepareStatement(query, parameters);
-            final ResultSet resultSet = preparedStatement.executeQuery();
-
             final List<Row> results = new ArrayList<Row>();
-            if (resultSet.first()) {
-                do {
-                    results.add(_rowFactory.fromResultSet(resultSet));
-                } while (resultSet.next());
-            }
-            resultSet.close();
-            preparedStatement.close();
+            try (
+                final PreparedStatement preparedStatement = _prepareStatement(query, parameters);
+                final ResultSet resultSet = preparedStatement.executeQuery() ) {
 
+                if (resultSet.first()) {
+                    do {
+                        results.add(_rowFactory.fromResultSet(resultSet));
+                    } while (resultSet.next());
+                }
+            }
             return results;
         }
+
         catch (final SQLException exception) {
             throw new DatabaseException("Error executing query.", exception);
         }
