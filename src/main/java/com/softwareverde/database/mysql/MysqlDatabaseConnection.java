@@ -6,6 +6,8 @@ import com.softwareverde.database.Query;
 import com.softwareverde.database.Row;
 import com.softwareverde.database.mysql.row.MysqlRowFactory;
 import com.softwareverde.database.mysql.row.RowFactory;
+import com.softwareverde.database.query.parameter.ParameterType;
+import com.softwareverde.database.query.parameter.TypedParameter;
 import com.softwareverde.util.Util;
 
 import java.sql.*;
@@ -13,45 +15,108 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, AutoCloseable {
-    private static final String INVALID_ID = "-1";
+    private static final Long INVALID_ID = -1L;
 
     private RowFactory _rowFactory = new MysqlRowFactory();
     private Connection _connection;
-    private String _lastInsertId = INVALID_ID;
+    private Long _lastInsertId = INVALID_ID;
 
-    private String _extractInsertId(final PreparedStatement preparedStatement) throws SQLException {
+    private TypedParameter[] _stringArrayToTypedParameters(final String[] parameters) {
+        if (parameters == null) { return new TypedParameter[0]; }
+
+        final TypedParameter[] typedParameters = new TypedParameter[parameters.length];
+        for (int i=0; i<parameters.length; ++i) {
+            typedParameters[i] = new TypedParameter(parameters[i], ParameterType.STRING);
+        }
+        return typedParameters;
+    }
+
+    private Long _extractInsertId(final PreparedStatement preparedStatement) throws SQLException {
         try (final ResultSet resultSet = preparedStatement.getGeneratedKeys()) {
-            final Integer insertId;
+            final Long insertId;
             {
                 if (resultSet.next()) {
-                    insertId = resultSet.getInt(1);
+                    insertId = resultSet.getLong(1);
                 }
                 else {
                     insertId = null;
                 }
             }
-            return Util.coalesce(insertId, INVALID_ID).toString();
+            return Util.coalesce(insertId, INVALID_ID);
         }
     }
 
-    private PreparedStatement _prepareStatement(final String query, final String[] parameters) throws SQLException {
+    private PreparedStatement _prepareStatement(final String query, final TypedParameter[] parameters) throws SQLException {
         final PreparedStatement preparedStatement = _connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         if (parameters != null) {
             for (int i = 0; i < parameters.length; ++i) {
-                preparedStatement.setString(i+1, parameters[i]);
+                final Integer parameterIndex = (i + 1);
+                final TypedParameter typedParameter = parameters[i];
+                switch (typedParameter.type) {
+                    case BYTE_ARRAY: {
+                        preparedStatement.setBytes(parameterIndex, (byte[]) typedParameter.value);
+                    } break;
+                    case BOOLEAN: {
+                        preparedStatement.setBoolean(parameterIndex, (Boolean) typedParameter.value);
+                    } break;
+                    case STRING: {
+                        preparedStatement.setString(parameterIndex, (String) typedParameter.value);
+                    } break;
+                    default: {
+                        final String stringValue = (typedParameter.value == null ? null : typedParameter.value.toString());
+                        preparedStatement.setString(parameterIndex, stringValue);
+                    } break;
+                }
             }
         }
         return preparedStatement;
     }
 
-    private void _executeSql(final String query, final String[] parameters) throws SQLException {
-        try (final PreparedStatement preparedStatement = _prepareStatement(query, parameters)) {
+    private void _executeAsPreparedStatement(final String query, final TypedParameter[] typedParameters) throws SQLException {
+        try (final PreparedStatement preparedStatement = _prepareStatement(query, typedParameters)) {
             preparedStatement.execute();
             _lastInsertId = _extractInsertId(preparedStatement);
         }
         catch (final SQLException exception) {
             _lastInsertId = INVALID_ID;
             throw exception;
+        }
+    }
+
+    private Long _executeSql(final String query, final TypedParameter[] parameters) throws DatabaseException {
+        try {
+            if (_connection.isClosed()) {
+                throw new DatabaseException("Attempted to execute SQL statement while disconnected.");
+            }
+
+            _executeAsPreparedStatement(query, parameters);
+            return _lastInsertId;
+        }
+        catch (final SQLException exception) {
+            throw new DatabaseException("Error executing SQL statement.", exception);
+        }
+    }
+
+    private List<Row> _query(final String query, final TypedParameter[] typedParameters) throws DatabaseException {
+        try {
+            if (_connection.isClosed()) {
+                throw new DatabaseException("Attempted to execute query while disconnected.");
+            }
+
+            final List<Row> results = new ArrayList<Row>();
+            try (final PreparedStatement preparedStatement = _prepareStatement(query, typedParameters);
+                 final ResultSet resultSet = preparedStatement.executeQuery() ) {
+
+                if (resultSet.first()) {
+                    do {
+                        results.add(_rowFactory.fromResultSet(resultSet));
+                    } while (resultSet.next());
+                }
+            }
+            return results;
+        }
+        catch (final SQLException exception) {
+            throw new DatabaseException("Error executing query.", exception);
         }
     }
 
@@ -82,53 +147,24 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, 
 
     @Override
     public synchronized Long executeSql(final String query, final String[] parameters) throws DatabaseException {
-        try {
-            if (_connection.isClosed()) {
-                throw new DatabaseException("Attempted to execute SQL statement while disconnected.");
-            }
-
-            _executeSql(query, parameters);
-            return Util.parseLong(_lastInsertId);
-        }
-        catch (final SQLException exception) {
-            throw new DatabaseException("Error executing SQL statement.", exception);
-        }
+        final TypedParameter[] typedParameters = _stringArrayToTypedParameters(parameters);
+        return _executeSql(query, typedParameters);
     }
 
     @Override
     public synchronized Long executeSql(final Query query) throws DatabaseException {
-        return this.executeSql(query.getQueryString(), query.getParameters().toArray(new String[0]));
+        return _executeSql(query.getQueryString(), query.getParameters().toArray(new TypedParameter[0]));
     }
 
     @Override
     public synchronized List<Row> query(final String query, final String[] parameters) throws DatabaseException {
-        try {
-            if (_connection.isClosed()) {
-                throw new DatabaseException("Attempted to execute query while disconnected.");
-            }
-
-            final List<Row> results = new ArrayList<Row>();
-            try (
-                final PreparedStatement preparedStatement = _prepareStatement(query, parameters);
-                final ResultSet resultSet = preparedStatement.executeQuery() ) {
-
-                if (resultSet.first()) {
-                    do {
-                        results.add(_rowFactory.fromResultSet(resultSet));
-                    } while (resultSet.next());
-                }
-            }
-            return results;
-        }
-
-        catch (final SQLException exception) {
-            throw new DatabaseException("Error executing query.", exception);
-        }
+        final TypedParameter[] typedParameters = _stringArrayToTypedParameters(parameters);
+        return _query(query, typedParameters);
     }
 
     @Override
     public synchronized List<Row> query(final Query query) throws DatabaseException {
-        return this.query(query.getQueryString(), query.getParameters().toArray(new String[0]));
+        return _query(query.getQueryString(), query.getParameters().toArray(new TypedParameter[0]));
     }
 
     @Override

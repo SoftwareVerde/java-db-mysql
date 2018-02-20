@@ -25,7 +25,8 @@ public class MysqlRow implements Row {
                 mysqlRow._columnNames.add(columnName);
                 mysqlRow._columnValues.put(columnName, columnValue);
             }
-        } catch (final SQLException exception) { }
+        }
+        catch (final SQLException exception) { }
 
         return mysqlRow;
     }

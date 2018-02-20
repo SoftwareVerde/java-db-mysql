@@ -57,12 +57,19 @@ public class MysqlDatabaseIntegrationTests {
 
         // Action
         databaseConnection.executeDdl("DROP TABLE IF EXISTS test_table");
-        databaseConnection.executeDdl("CREATE TABLE test_table (id int unsigned not null primary key auto_increment, value varchar(255))");
+        databaseConnection.executeDdl("CREATE TABLE test_table (id int unsigned not null primary key auto_increment, value varchar(255), value_int int, value_int2 int NOT NULL, bytes blob, is_value tinyint(1) NOT NULL)");
         for (int i=0; i<insertCount; ++i) {
-            final Long rowId = databaseConnection.executeSql(new Query("INSERT INTO test_table (value) VALUES (?)").setParameter(i));
+            final Long rowId = databaseConnection.executeSql(
+                new Query("INSERT INTO test_table (value, value_int, value_int2, bytes, is_value) VALUES (?, ?, ?, ?, ?)")
+                .setParameter(i)
+                .setParameter(i)
+                .setParameter(String.valueOf(i)) // Wrong type should be coerced...
+                .setParameter(new byte[]{ 0x00, 0x01, 0x02, 0x03 })
+                .setParameter(true)
+            );
             rowIds.add(rowId);
         }
-        rows = databaseConnection.query(new Query("SELECT * FROM test_table WHERE value < ?").setParameter(""+ (insertCount / 2)));
+        rows = databaseConnection.query(new Query("SELECT * FROM test_table WHERE value < ? ORDER BY id ASC").setParameter(""+ (insertCount / 2)));
         databaseConnection.close();
 
         // Assert
@@ -75,17 +82,34 @@ public class MysqlDatabaseIntegrationTests {
         Assert.assertEquals(insertCount / 2, rows.size());
         for (int i=0; i<insertCount/2; ++i) {
             final Row row = rows.get(i);
+
             final String idString = row.getString("id");
-            final String valueString = row.getString("value");
-
-            final Long idLong = row.getLong("id");
-            final Integer valueInt = row.getInteger("value");
-
-            Assert.assertEquals(i+1, idLong.intValue());
             Assert.assertEquals(String.valueOf(i+1), idString);
 
-            Assert.assertEquals(i, valueInt.intValue());
+            final String valueString = row.getString("value");
             Assert.assertEquals(String.valueOf(i), valueString);
+
+            final Long idLong = row.getLong("id");
+            Assert.assertEquals(i+1, idLong.intValue());
+
+            final Integer valueInt = row.getInteger("value");
+            Assert.assertEquals(i, valueInt.intValue());
+
+            final Integer valueColInt = row.getInteger("value_int");
+            Assert.assertEquals(i, valueInt.intValue());
+
+            final Integer valueColInt2 = row.getInteger("value_int2");
+            Assert.assertEquals(i, valueInt.intValue());
+
+            final byte[] bytes = row.getBytes("bytes");
+            Assert.assertEquals(4, bytes.length);
+            Assert.assertEquals((byte) 0x00, bytes[0]);
+            Assert.assertEquals((byte) 0x01, bytes[1]);
+            Assert.assertEquals((byte) 0x02, bytes[2]);
+            Assert.assertEquals((byte) 0x03, bytes[3]);
+
+            final Boolean truthy = row.getBoolean("is_value");
+            Assert.assertTrue(truthy);
         }
     }
 }
