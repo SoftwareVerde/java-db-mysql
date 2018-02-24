@@ -112,4 +112,60 @@ public class MysqlDatabaseIntegrationTests {
             Assert.assertTrue(truthy);
         }
     }
+
+    @Test
+    public void database_should_get_and_store_blob() throws Exception {
+        // Setup
+        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
+
+        final byte[] bytes = new byte[256];
+        for (int i=0; i<bytes.length; ++i) {
+            bytes[i] = (byte) i;
+        }
+
+        // Action
+        databaseConnection.executeDdl("DROP TABLE IF EXISTS test_table");
+        databaseConnection.executeDdl("CREATE TABLE test_table (id int unsigned not null primary key auto_increment, value blob)");
+        final Long rowId = databaseConnection.executeSql(
+            new Query("INSERT INTO test_table (value) VALUES (?)")
+                .setParameter(bytes)
+        );
+        final List<Row> rows = databaseConnection.query(new Query("SELECT * FROM test_table"));
+        databaseConnection.close();
+
+        // Assert
+        Assert.assertEquals(1, rows.size());
+        final Row row = rows.get(0);
+
+        final byte[] receivedBytes = row.getBytes("value");
+        Assert.assertEquals(256, bytes.length);
+        for (int i=0; i<receivedBytes.length; ++i) {
+            Assert.assertEquals(bytes[i], receivedBytes[i]);
+        }
+    }
+
+    @Test
+    public void database_should_get_and_store_null_blob() throws Exception {
+        // Setup
+        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
+
+        final byte[] bytes = null;
+
+        // Action
+        databaseConnection.executeDdl("DROP TABLE IF EXISTS test_table");
+        databaseConnection.executeDdl("CREATE TABLE test_table (id int unsigned not null primary key auto_increment, value blob)");
+        final Long rowId = databaseConnection.executeSql(
+            new Query("INSERT INTO test_table (value) VALUES (?)")
+                .setParameter(bytes)
+        );
+        final List<Row> rows = databaseConnection.query(new Query("SELECT * FROM test_table"));
+        databaseConnection.close();
+
+        // Assert
+        Assert.assertEquals(1, rows.size());
+        final Row row = rows.get(0);
+
+        final byte[] receivedBytes = row.getBytes("value");
+        Assert.assertNull(receivedBytes);
+    }
 }
