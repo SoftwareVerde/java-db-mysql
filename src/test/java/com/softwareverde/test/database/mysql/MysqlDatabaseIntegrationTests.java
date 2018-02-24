@@ -1,56 +1,61 @@
 package com.softwareverde.test.database.mysql;
 
-import com.softwareverde.database.DatabaseConnection;
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import com.softwareverde.database.Database;
 import com.softwareverde.database.Query;
 import com.softwareverde.database.Row;
-import com.softwareverde.database.mysql.MysqlDatabase;
+import com.softwareverde.database.mysql.MysqlDatabaseConnection;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MysqlDatabaseIntegrationTests {
+    protected static class EmbeddedMariaDbDatabase implements Database<Connection> {
+        public final String schema = "test_database_"+ ((int) (Math.random() * Integer.MAX_VALUE));
 
-    /**
-     * Replace the connection-parameters here for your local test instance.
-     *  WARNING: The tests in this file will create a random database and drop it at the conclusion.
-     */
-    protected final String _databaseUrl = "localhost";
-    protected final String _username = "root";
-    protected final String _password = "";
-    protected final String _schema = "test_database_"+ ((int) (Math.random() * Integer.MAX_VALUE));
+        protected final DBConfigurationBuilder _dbConfigurationBuilder;
+        protected final DB _db;
 
-    protected final MysqlDatabase _database = new MysqlDatabase(_databaseUrl, _username, _password);
+        public EmbeddedMariaDbDatabase() throws ManagedProcessException {
+            _dbConfigurationBuilder = DBConfigurationBuilder.newBuilder();
+            _db = DB.newEmbeddedDB(_dbConfigurationBuilder.build());
+            _db.start();
+            _db.createDB(this.schema);
+        }
 
-    @Before
-    public void setUp() throws Exception {
-        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
-
-        databaseConnection.executeDdl("DROP DATABASE IF EXISTS "+ _schema);
-        databaseConnection.executeDdl("CREATE DATABASE "+ _schema);
-
-        _database.setDatabase(_schema);
-
-        databaseConnection.close();
+        @Override
+        public MysqlDatabaseConnection newConnection() {
+            try {
+                final Connection connection = DriverManager.getConnection(_dbConfigurationBuilder.getURL(this.schema));
+                return new MysqlDatabaseConnection(connection);
+            }
+            catch (final Exception exception) {
+                throw new RuntimeException(exception);
+            }
+        }
     }
 
-    @After
-    public void tearDown() throws Exception {
-        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
-
-        databaseConnection.executeDdl("DROP DATABASE IF EXISTS " + _schema);
-
-        databaseConnection.close();
+    protected static final EmbeddedMariaDbDatabase _database;
+    static {
+        try {
+            _database = new EmbeddedMariaDbDatabase();
+        }
+        catch (final Exception exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     @Test
     public void database_should_query_real_local_instance() throws Exception {
         // Setup
-        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
+        final MysqlDatabaseConnection databaseConnection = _database.newConnection();
         final Integer insertCount = 10;
         final List<Long> rowIds = new ArrayList<Long>();
         final List<Row> rows;
@@ -116,7 +121,7 @@ public class MysqlDatabaseIntegrationTests {
     @Test
     public void database_should_get_and_store_blob() throws Exception {
         // Setup
-        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
+        final MysqlDatabaseConnection databaseConnection = _database.newConnection();
 
         final byte[] bytes = new byte[256];
         for (int i=0; i<bytes.length; ++i) {
@@ -147,7 +152,7 @@ public class MysqlDatabaseIntegrationTests {
     @Test
     public void database_should_get_and_store_null_blob() throws Exception {
         // Setup
-        final DatabaseConnection<Connection> databaseConnection = _database.newConnection();
+        final MysqlDatabaseConnection databaseConnection = _database.newConnection();
 
         final byte[] bytes = null;
 
