@@ -1,7 +1,6 @@
 package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.Database;
-import com.softwareverde.database.DatabaseConnection;
 import com.softwareverde.database.DatabaseException;
 
 import java.sql.Connection;
@@ -30,7 +29,7 @@ public class MysqlDatabase implements Database<Connection> {
     }
 
     @Override
-    public DatabaseConnection<Connection> newConnection() throws DatabaseException {
+    public MysqlDatabaseConnection newConnection() throws DatabaseException {
         try {
             final Connection connection = _connect();
             return new MysqlDatabaseConnection(connection);
