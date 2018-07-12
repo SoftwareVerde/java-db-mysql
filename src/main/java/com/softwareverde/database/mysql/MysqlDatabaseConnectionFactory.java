@@ -2,11 +2,17 @@ package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.DatabaseConnectionFactory;
 import com.softwareverde.database.DatabaseException;
+import com.softwareverde.util.Util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 
 public class MysqlDatabaseConnectionFactory implements DatabaseConnectionFactory<Connection> {
+    public static String createConnectionString(final String hostname, final Integer port, final String schema) {
+        final Integer defaultPort = 8336;
+        return "jdbc:mysql://" + hostname + ":" + Util.coalesce(port, defaultPort) + "/" + Util.coalesce(schema, "");
+    }
+
     private final String _connectionString;
     private final String _username;
     private final String _password;
