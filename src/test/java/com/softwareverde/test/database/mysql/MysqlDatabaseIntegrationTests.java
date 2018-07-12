@@ -33,6 +33,7 @@ public class MysqlDatabaseIntegrationTests {
         @Override
         public MysqlDatabaseConnection newConnection() {
             try {
+                Class.forName("com.mysql.jdbc.Driver");
                 final Connection connection = DriverManager.getConnection(_dbConfigurationBuilder.getURL(this.schema));
                 return new MysqlDatabaseConnection(connection);
             }

@@ -20,6 +20,7 @@ public class MysqlDatabaseConnectionFactory implements DatabaseConnectionFactory
     @Override
     public MysqlDatabaseConnection newConnection() throws DatabaseException {
         try {
+            Class.forName("com.mysql.jdbc.Driver");
             final Connection connection = DriverManager.getConnection(_connectionString, _username, _password);
             return new MysqlDatabaseConnection(connection);
         }
