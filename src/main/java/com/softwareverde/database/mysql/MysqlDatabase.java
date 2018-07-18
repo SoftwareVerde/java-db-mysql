@@ -2,26 +2,41 @@ package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.Database;
 import com.softwareverde.database.DatabaseException;
+import com.softwareverde.util.Util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class MysqlDatabase implements Database<Connection> {
-    private String _username = "root";
-    private String _password = "";
-    private String _url = "localhost";
+    private final String _url;
+    private final Properties _properties;
     private String _databaseName = "";
 
     protected Connection _connect() throws SQLException, ClassNotFoundException {
         Class.forName("com.mysql.jdbc.Driver");
-        return DriverManager.getConnection("jdbc:mysql://"+ _url +"/"+ _databaseName +"?user="+ _username +"&password="+ _password +"&useSSL=false&serverTimezone=UTC");
+        return DriverManager.getConnection("jdbc:mysql://"+ _url +"/"+ Util.coalesce(_databaseName, ""), _properties);
     }
 
     public MysqlDatabase(final String url, final String username, final String password) {
         _url = url;
-        _username = username;
-        _password = password;
+        _properties = new Properties();
+
+        _properties.setProperty("user", username);
+        _properties.setProperty("password", password);
+        _properties.setProperty("useSSL", "false");
+        _properties.setProperty("serverTimezone", "UTC");
+    }
+
+    public MysqlDatabase(final String url, final String username, final String password, final Properties properties) {
+        _url = url;
+        _properties = new Properties(properties);
+
+        _properties.setProperty("user", username);
+        _properties.setProperty("password", password);
+        _properties.setProperty("useSSL", "false");
+        _properties.setProperty("serverTimezone", "UTC");
     }
 
     public void setDatabase(final String databaseName) throws DatabaseException {
