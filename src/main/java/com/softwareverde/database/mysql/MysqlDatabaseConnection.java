@@ -16,10 +16,12 @@ import java.util.List;
 
 public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, AutoCloseable {
     private static final Long INVALID_ID = -1L;
+    private static final Integer INVALID_ROW_COUNT = -1;
 
     private RowFactory _rowFactory = new MysqlRowFactory();
     private Connection _connection;
     private Long _lastInsertId = INVALID_ID;
+    private Integer _lastRowAffectedCount = INVALID_ROW_COUNT;
 
     private TypedParameter[] _stringArrayToTypedParameters(final String[] parameters) {
         if (parameters == null) { return new TypedParameter[0]; }
@@ -76,9 +78,11 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, 
         try (final PreparedStatement preparedStatement = _prepareStatement(query, typedParameters)) {
             preparedStatement.execute();
             _lastInsertId = _extractInsertId(preparedStatement);
+            _lastRowAffectedCount = preparedStatement.getUpdateCount();
         }
         catch (final SQLException exception) {
             _lastInsertId = INVALID_ID;
+            _lastRowAffectedCount = INVALID_ROW_COUNT;
             throw exception;
         }
     }
@@ -122,6 +126,10 @@ public class MysqlDatabaseConnection implements DatabaseConnection<Connection>, 
 
     public MysqlDatabaseConnection(final Connection connection) {
         _connection = connection;
+    }
+
+    public Integer getRowsAffectedCount() {
+        return _lastRowAffectedCount;
     }
 
     @Override

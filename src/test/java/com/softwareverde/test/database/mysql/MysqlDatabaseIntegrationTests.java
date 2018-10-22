@@ -174,4 +174,38 @@ public class MysqlDatabaseIntegrationTests {
         final byte[] receivedBytes = row.getBytes("value");
         Assert.assertNull(receivedBytes);
     }
+
+    @Test
+    public void database_should_return_number_of_affected_rows() throws Exception {
+        final MysqlDatabaseConnection databaseConnection = _database.newConnection();
+        databaseConnection.executeDdl("DROP TABLE IF EXISTS test_table");
+        databaseConnection.executeDdl("CREATE TABLE test_table (id int unsigned not null primary key auto_increment, `key` varchar(255) not null, value varchar(255) not null, UNIQUE KEY key_uq (`key`))");
+
+        {
+            databaseConnection.executeSql(
+                new Query("INSERT INTO test_table (`key`, value) VALUES ('1', '1')")
+            );
+            Assert.assertEquals(1, databaseConnection.getRowsAffectedCount().intValue());
+        }
+
+        {
+            final Long rowId = databaseConnection.executeSql(
+                new Query("INSERT IGNORE INTO test_table (`key`, value) VALUES ('1', '1'), ('2', '2')") // Contains one duplicate, one unique...
+            );
+            Assert.assertEquals(2L, rowId.longValue());
+            Assert.assertEquals(1, databaseConnection.getRowsAffectedCount().intValue());
+        }
+
+        {
+            final Long rowId = databaseConnection.executeSql(
+                new Query("INSERT IGNORE INTO test_table (`key`, value) VALUES ('2', '2'), ('3', '3'), ('4', '4')") // Contains one duplicate, two unique...
+            );
+            Assert.assertEquals(2, databaseConnection.getRowsAffectedCount().intValue());
+
+            final Long expectedValue = databaseConnection.query("SELECT id FROM test_table WHERE `key` = '3'", null).get(0).getLong("id");
+            Assert.assertEquals(expectedValue, rowId);
+        }
+
+        databaseConnection.close();
+    }
 }
