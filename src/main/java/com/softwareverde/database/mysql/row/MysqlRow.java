@@ -30,6 +30,7 @@ public class MysqlRow implements Row {
 
     protected static Boolean _isBinaryType(final Integer sqlDataType) {
         switch (sqlDataType) {
+            case Types.BLOB:
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY: {
