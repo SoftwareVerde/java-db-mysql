@@ -14,7 +14,7 @@ import java.util.List;
 
 public class DatabaseInitializer {
     public interface DatabaseUpgradeHandler {
-        Boolean onUpgrade(int previousVersion, int requiredVersion);
+        Boolean onUpgrade(MysqlDatabaseConnection maintenanceDatabaseConnection, Integer previousVersion, Integer requiredVersion);
     }
 
     protected final String _initSqlFileName;
@@ -55,7 +55,7 @@ public class DatabaseInitializer {
         _requiredDatabaseVersion = 1;
         _databaseUpgradeHandler = new DatabaseUpgradeHandler() {
             @Override
-            public Boolean onUpgrade(final int previousVersion, final int requiredVersion) {
+            public Boolean onUpgrade(final MysqlDatabaseConnection maintenanceDatabaseConnection, final Integer previousVersion, final Integer requiredVersion) {
                 throw new RuntimeException("Database upgrade not supported.");
             }
         };
@@ -156,7 +156,7 @@ public class DatabaseInitializer {
                 }
             }
             else if (databaseVersionNumber < _requiredDatabaseVersion) {
-                final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(databaseVersionNumber, _requiredDatabaseVersion);
+                final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(maintenanceDatabaseConnection, databaseVersionNumber, _requiredDatabaseVersion);
                 if (! upgradeWasSuccessful) {
                     throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + _requiredDatabaseVersion + ".");
                 }
