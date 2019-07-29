@@ -2,8 +2,8 @@ package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.DatabaseConnectionFactory;
 import com.softwareverde.database.DatabaseException;
-import com.softwareverde.database.mysql.properties.Credentials;
-import com.softwareverde.database.mysql.properties.DatabaseProperties;
+import com.softwareverde.database.properties.DatabaseCredentials;
+import com.softwareverde.database.properties.DatabaseProperties;
 import com.softwareverde.util.Util;
 
 import java.sql.Connection;
@@ -55,12 +55,12 @@ public class MysqlDatabaseConnectionFactory implements DatabaseConnectionFactory
         this(databaseProperties, databaseProperties.getCredentials());
     }
 
-    public MysqlDatabaseConnectionFactory(final DatabaseProperties databaseProperties, final Credentials credentials) {
-        this(databaseProperties, credentials, new Properties());
+    public MysqlDatabaseConnectionFactory(final DatabaseProperties databaseProperties, final DatabaseCredentials databaseCredentials) {
+        this(databaseProperties, databaseCredentials, new Properties());
     }
 
-    public MysqlDatabaseConnectionFactory(final DatabaseProperties databaseProperties, final Credentials credentials, final Properties connectionProperties) {
-        this(databaseProperties.getHostname(), databaseProperties.getPort(), databaseProperties.getSchema(), credentials.username, credentials.password, connectionProperties);
+    public MysqlDatabaseConnectionFactory(final DatabaseProperties databaseProperties, final DatabaseCredentials databaseCredentials, final Properties connectionProperties) {
+        this(databaseProperties.getHostname(), databaseProperties.getPort(), databaseProperties.getSchema(), databaseCredentials.username, databaseCredentials.password, connectionProperties);
     }
 
     public MysqlDatabaseConnectionFactory(final String hostname, final Integer port, final String schema, final String username, final String password) {

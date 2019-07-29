@@ -1,25 +1,24 @@
 package com.softwareverde.database.mysql;
 
+import com.softwareverde.database.DatabaseConnection;
 import com.softwareverde.database.DatabaseException;
-import com.softwareverde.database.Query;
-import com.softwareverde.database.Row;
-import com.softwareverde.database.mysql.properties.Credentials;
-import com.softwareverde.database.mysql.properties.DatabaseProperties;
+import com.softwareverde.database.properties.DatabaseCredentials;
+import com.softwareverde.database.properties.DatabaseProperties;
+import com.softwareverde.database.query.Query;
+import com.softwareverde.database.row.Row;
 import com.softwareverde.util.HashUtil;
 import com.softwareverde.util.IoUtil;
 
 import java.io.InputStream;
 import java.io.StringReader;
+import java.sql.Connection;
 import java.util.List;
 
-public class DatabaseInitializer {
-    public interface DatabaseUpgradeHandler {
-        Boolean onUpgrade(MysqlDatabaseConnection maintenanceDatabaseConnection, Integer previousVersion, Integer requiredVersion);
-    }
+public class MysqlDatabaseInitializer implements com.softwareverde.database.DatabaseInitializer<Connection> {
 
     protected final String _initSqlFileName;
     protected final Integer _requiredDatabaseVersion;
-    protected final DatabaseUpgradeHandler _databaseUpgradeHandler;
+    protected final DatabaseUpgradeHandler<Connection> _databaseUpgradeHandler;
 
     protected String _getResource(final String resourceFile) {
         final ClassLoader classLoader = this.getClass().getClassLoader();
@@ -28,7 +27,7 @@ public class DatabaseInitializer {
         return IoUtil.streamToString(resourceStream);
     }
 
-    protected Integer _getDatabaseVersionNumber(final MysqlDatabaseConnection databaseConnection) {
+    protected Integer _getDatabaseVersionNumber(final DatabaseConnection<Connection> databaseConnection) {
         try {
             final List<Row> rows = databaseConnection.query("SELECT version FROM metadata ORDER BY id DESC LIMIT 1", null);
             if (! rows.isEmpty()) {
@@ -40,7 +39,7 @@ public class DatabaseInitializer {
         return 0;
     }
 
-    protected void _runSqlScript(final String databaseInitFileContents, final MysqlDatabaseConnection databaseConnection) throws DatabaseException {
+    protected void _runSqlScript(final String databaseInitFileContents, final DatabaseConnection<Connection> databaseConnection) throws DatabaseException {
         try {
             final ScriptRunner scriptRunner = new ScriptRunner(databaseConnection.getRawConnection(), true, false);
             scriptRunner.runScript(new StringReader(databaseInitFileContents));
@@ -50,18 +49,18 @@ public class DatabaseInitializer {
         }
     }
 
-    public DatabaseInitializer() {
+    public MysqlDatabaseInitializer() {
         _initSqlFileName = null;
         _requiredDatabaseVersion = 1;
-        _databaseUpgradeHandler = new DatabaseUpgradeHandler() {
+        _databaseUpgradeHandler = new DatabaseUpgradeHandler<Connection>() {
             @Override
-            public Boolean onUpgrade(final MysqlDatabaseConnection maintenanceDatabaseConnection, final Integer previousVersion, final Integer requiredVersion) {
+            public Boolean onUpgrade(final DatabaseConnection<Connection> maintenanceDatabaseConnection, final Integer previousVersion, final Integer requiredVersion) {
                 throw new RuntimeException("Database upgrade not supported.");
             }
         };
     }
 
-    public DatabaseInitializer(final String databaseInitFileName, final Integer requiredDatabaseVersion, final DatabaseUpgradeHandler databaseUpgradeHandler) {
+    public MysqlDatabaseInitializer(final String databaseInitFileName, final Integer requiredDatabaseVersion, final DatabaseUpgradeHandler<Connection> databaseUpgradeHandler) {
         if (databaseInitFileName != null) {
             _initSqlFileName = ((databaseInitFileName.startsWith("/") ? "" : "/") + databaseInitFileName);
         }
@@ -76,19 +75,19 @@ public class DatabaseInitializer {
     /**
      * Creates the schema if it does not exist and a maintenance user to use instead of root.
      *  The maintenance username is [schema]_maintenance; its password being the sha256 hash of the root password.
-     *  Returns the maintenance credentials created by this call.
      */
-    public void initializeSchema(final MysqlDatabaseConnection rootDatabaseConnection, final DatabaseProperties databaseProperties) throws DatabaseException {
-        final Credentials credentials;
-        final Credentials maintenanceCredentials;
+    @Override
+    public void initializeSchema(final DatabaseConnection<Connection> rootDatabaseConnection, final DatabaseProperties databaseProperties) throws DatabaseException {
+        final DatabaseCredentials credentials;
+        final DatabaseCredentials maintenanceCredentials;
         {
             final String databaseSchema = databaseProperties.getSchema();
             final String newRootPassword = databaseProperties.getRootPassword();
             final String maintenanceUsername = (databaseSchema + "_maintenance");
             final String maintenancePassword = HashUtil.sha256(newRootPassword);
 
-            credentials = new Credentials(databaseProperties.getUsername(), databaseProperties.getPassword());
-            maintenanceCredentials = new Credentials(maintenanceUsername, maintenancePassword);
+            credentials = new DatabaseCredentials(databaseProperties.getUsername(), databaseProperties.getPassword());
+            maintenanceCredentials = new DatabaseCredentials(maintenanceUsername, maintenancePassword);
         }
 
         try {
@@ -126,20 +125,23 @@ public class DatabaseInitializer {
         }
     }
 
-    public Credentials getMaintenanceCredentials(final DatabaseProperties databaseProperties) {
+    @Override
+    public DatabaseCredentials getMaintenanceCredentials(final DatabaseProperties databaseProperties) {
         final String databaseSchema = databaseProperties.getSchema();
         final String rootPassword = databaseProperties.getRootPassword();
         final String maintenanceUsername = (databaseSchema + "_maintenance");
         final String maintenancePassword = HashUtil.sha256(rootPassword);
 
-        return new Credentials(maintenanceUsername, maintenancePassword);
+        return new DatabaseCredentials(maintenanceUsername, maintenancePassword);
     }
 
-    public Integer getDatabaseVersionNumber(final MysqlDatabaseConnection databaseConnection) {
+    @Override
+    public Integer getDatabaseVersionNumber(final DatabaseConnection<Connection> databaseConnection) {
         return _getDatabaseVersionNumber(databaseConnection);
     }
 
-    public void initializeDatabase(final MysqlDatabaseConnection maintenanceDatabaseConnection) throws DatabaseException {
+    @Override
+    public void initializeDatabase(final DatabaseConnection<Connection> maintenanceDatabaseConnection) throws DatabaseException {
         final Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection);
 
         try {

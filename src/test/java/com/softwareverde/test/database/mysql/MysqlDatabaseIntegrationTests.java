@@ -4,10 +4,9 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.softwareverde.database.Database;
-import com.softwareverde.database.Query;
-import com.softwareverde.database.Row;
 import com.softwareverde.database.mysql.MysqlDatabaseConnection;
-import org.junit.After;
+import com.softwareverde.database.query.Query;
+import com.softwareverde.database.row.Row;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,7 +56,7 @@ public class MysqlDatabaseIntegrationTests {
     public void database_should_query_real_local_instance() throws Exception {
         // Setup
         final MysqlDatabaseConnection databaseConnection = _database.newConnection();
-        final Integer insertCount = 10;
+        final int insertCount = 10;
         final List<Long> rowIds = new ArrayList<Long>();
         final List<Row> rows;
 
@@ -67,11 +66,11 @@ public class MysqlDatabaseIntegrationTests {
         for (int i=0; i<insertCount; ++i) {
             final Long rowId = databaseConnection.executeSql(
                 new Query("INSERT INTO test_table (value, value_int, value_int2, bytes, is_value) VALUES (?, ?, ?, ?, ?)")
-                .setParameter(i)
-                .setParameter(i)
-                .setParameter(String.valueOf(i)) // Wrong type should be coerced...
-                .setParameter(new byte[]{ 0x00, 0x01, 0x02, 0x03 })
-                .setParameter(true)
+                    .setParameter(i)
+                    .setParameter(i)
+                    .setParameter(String.valueOf(i)) // Wrong type should be coerced...
+                    .setParameter(new byte[]{ 0x00, 0x01, 0x02, 0x03 })
+                    .setParameter(true)
             );
             rowIds.add(rowId);
         }
@@ -79,24 +78,24 @@ public class MysqlDatabaseIntegrationTests {
         databaseConnection.close();
 
         // Assert
-        Assert.assertEquals(insertCount.intValue(), rowIds.size());
-        for (int i=0; i<insertCount; ++i) {
+        Assert.assertEquals(insertCount, rowIds.size());
+        for (int i = 0; i < insertCount; ++i) {
             final Long rowId = rowIds.get(i);
-            Assert.assertEquals(i+1, rowId.intValue());
+            Assert.assertEquals(i + 1, rowId.intValue());
         }
 
         Assert.assertEquals(insertCount / 2, rows.size());
-        for (int i=0; i<insertCount/2; ++i) {
+        for (int i = 0; i < (insertCount / 2); ++i) {
             final Row row = rows.get(i);
 
             final String idString = row.getString("id");
-            Assert.assertEquals(String.valueOf(i+1), idString);
+            Assert.assertEquals(String.valueOf(i + 1), idString);
 
             final String valueString = row.getString("value");
             Assert.assertEquals(String.valueOf(i), valueString);
 
             final Long idLong = row.getLong("id");
-            Assert.assertEquals(i+1, idLong.intValue());
+            Assert.assertEquals(i + 1, idLong.intValue());
 
             final Integer valueInt = row.getInteger("value");
             Assert.assertEquals(i, valueInt.intValue());
@@ -125,7 +124,7 @@ public class MysqlDatabaseIntegrationTests {
         final MysqlDatabaseConnection databaseConnection = _database.newConnection();
 
         final byte[] bytes = new byte[256];
-        for (int i=0; i<bytes.length; ++i) {
+        for (int i = 0; i < bytes.length; ++i) {
             bytes[i] = (byte) i;
         }
 
@@ -145,7 +144,7 @@ public class MysqlDatabaseIntegrationTests {
 
         final byte[] receivedBytes = row.getBytes("value");
         Assert.assertEquals(256, bytes.length);
-        for (int i=0; i<receivedBytes.length; ++i) {
+        for (int i = 0; i < receivedBytes.length; ++i) {
             Assert.assertEquals(bytes[i], receivedBytes[i]);
         }
     }

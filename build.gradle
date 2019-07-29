@@ -3,7 +3,7 @@ version '4.0.0'
 
 apply plugin: 'java'
 
-sourceCompatibility = 1.7
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 task makeJar(type: Jar) {
     manifest {
@@ -21,9 +21,9 @@ repositories {
 
 dependencies {
     compile     group: 'com.github.softwareverde',  name: 'java-constable',         version: 'v0.4.3'
-    compile     group: 'com.github.softwareverde',  name: 'java-db',                version: 'v2.3.2'
+    compile     group: 'com.github.softwareverde',  name: 'java-db',                version: '80b96a0'
     compile     group: 'com.github.softwareverde',  name: 'java-util',              version: 'v1.3.2'
-    compile     group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.47'   // v6+ requires Java 8
+    compile     group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.47'
 
     testCompile group: 'junit',                     name: 'junit',                  version: '4.11'
     testCompile group: 'com.github.softwareverde',  name: 'mariaDB4j',              version: 'v1.0.4'
@@ -55,3 +55,21 @@ tasks.withType(Test) {
     }
 }
 
+tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}

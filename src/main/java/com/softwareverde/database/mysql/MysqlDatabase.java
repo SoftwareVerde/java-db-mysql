@@ -1,8 +1,8 @@
 package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.Database;
-import com.softwareverde.database.mysql.properties.Credentials;
-import com.softwareverde.database.mysql.properties.DatabaseProperties;
+import com.softwareverde.database.properties.DatabaseCredentials;
+import com.softwareverde.database.properties.DatabaseProperties;
 
 import java.sql.Connection;
 import java.util.Properties;
@@ -14,7 +14,7 @@ public class MysqlDatabase extends MysqlDatabaseConnectionFactory implements Dat
         this(databaseProperties, databaseProperties.getCredentials());
     }
 
-    public MysqlDatabase(final DatabaseProperties databaseProperties, final Credentials credentials) {
+    public MysqlDatabase(final DatabaseProperties databaseProperties, final DatabaseCredentials credentials) {
         super(databaseProperties.getHostname(), databaseProperties.getPort(), databaseProperties.getSchema(), credentials.username, credentials.password);
     }
 
