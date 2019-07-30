@@ -22,6 +22,7 @@
  *  Software Verde, LLC
  *      2019-01 - Cloned from: https://github.com/BenoitDuffez/ScriptRunner
  *      2019-01 - Rollbacks aren't attempted if autocommit is set to true.
+ *      2019-07 - Renamed to SqlScriptRunner.
  *
  */
 
@@ -36,7 +37,7 @@ import java.util.regex.Pattern;
 /**
  * Tool to run database scripts
  */
-public class ScriptRunner {
+public class SqlScriptRunner {
 
     private static final String DEFAULT_DELIMITER = ";";
     /**
@@ -61,8 +62,8 @@ public class ScriptRunner {
     /**
      * Default constructor
      */
-    public ScriptRunner(Connection connection, boolean autoCommit,
-                        boolean stopOnError) {
+    public SqlScriptRunner(Connection connection, boolean autoCommit,
+                           boolean stopOnError) {
         this.connection = connection;
         this.autoCommit = autoCommit;
         this.stopOnError = stopOnError;

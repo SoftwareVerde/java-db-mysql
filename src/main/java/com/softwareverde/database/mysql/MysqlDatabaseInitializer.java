@@ -6,6 +6,7 @@ import com.softwareverde.database.properties.DatabaseCredentials;
 import com.softwareverde.database.properties.DatabaseProperties;
 import com.softwareverde.database.query.Query;
 import com.softwareverde.database.row.Row;
+import com.softwareverde.database.util.TransactionUtil;
 import com.softwareverde.util.HashUtil;
 import com.softwareverde.util.IoUtil;
 
@@ -41,8 +42,10 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
 
     protected void _runSqlScript(final String databaseInitFileContents, final DatabaseConnection<Connection> databaseConnection) throws DatabaseException {
         try {
-            final ScriptRunner scriptRunner = new ScriptRunner(databaseConnection.getRawConnection(), true, false);
+            TransactionUtil.startTransaction(databaseConnection);
+            final SqlScriptRunner scriptRunner = new SqlScriptRunner(databaseConnection.getRawConnection(), false, true);
             scriptRunner.runScript(new StringReader(databaseInitFileContents));
+            TransactionUtil.commitTransaction(databaseConnection);
         }
         catch (final Exception exception) {
             throw new DatabaseException(exception);
