@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     compile     group: 'com.github.softwareverde',  name: 'java-constable',         version: 'v0.4.3'
-    compile     group: 'com.github.softwareverde',  name: 'java-db',                version: 'cc026485d8'
+    compile     group: 'com.github.softwareverde',  name: 'java-db',                version: '6f32a683a7'
     compile     group: 'com.github.softwareverde',  name: 'java-util',              version: 'v1.3.2'
     compile     group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.47'
 
