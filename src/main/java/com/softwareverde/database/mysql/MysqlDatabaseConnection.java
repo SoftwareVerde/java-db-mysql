@@ -1,6 +1,6 @@
 package com.softwareverde.database.mysql;
 
-import com.softwareverde.database.connection.JdbcDatabaseConnection;
+import com.softwareverde.database.jdbc.JdbcDatabaseConnection;
 import com.softwareverde.database.mysql.row.MysqlRowFactory;
 
 import java.sql.Connection;

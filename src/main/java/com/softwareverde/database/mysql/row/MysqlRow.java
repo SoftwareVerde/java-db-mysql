@@ -1,6 +1,6 @@
 package com.softwareverde.database.mysql.row;
 
-import com.softwareverde.database.row.JdbcRow;
+import com.softwareverde.database.jdbc.row.JdbcRow;
 
 public class MysqlRow extends JdbcRow {
 
