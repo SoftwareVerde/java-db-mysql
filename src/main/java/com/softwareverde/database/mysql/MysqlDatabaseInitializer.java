@@ -145,25 +145,30 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
 
     @Override
     public void initializeDatabase(final DatabaseConnection<Connection> maintenanceDatabaseConnection) throws DatabaseException {
-        final Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection);
-
         try {
-            if (databaseVersionNumber < 1) {
-                final String metadataInitSqlFile = "queries/metadata_init.sql";
-                final String query = _getResource(metadataInitSqlFile);
-                if (query == null) { throw new RuntimeException("Unable to load: "+ metadataInitSqlFile); }
+            { // Check/Handle Database Initialization....
+                final Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection);
+                if (databaseVersionNumber < 1) {
+                    final String metadataInitSqlFile = "queries/metadata_init.sql";
+                    final String query = _getResource(metadataInitSqlFile);
+                    if (query == null) { throw new RuntimeException("Unable to load: "+ metadataInitSqlFile); }
 
-                _runSqlScript(query, maintenanceDatabaseConnection);
+                    _runSqlScript(query, maintenanceDatabaseConnection);
 
-                if (_initSqlFileName != null) {
-                    final String initScript = IoUtil.getResource(_initSqlFileName);
-                    _runSqlScript(initScript, maintenanceDatabaseConnection);
+                    if (_initSqlFileName != null) {
+                        final String initScript = IoUtil.getResource(_initSqlFileName);
+                        _runSqlScript(initScript, maintenanceDatabaseConnection);
+                    }
                 }
             }
-            else if (databaseVersionNumber < _requiredDatabaseVersion) {
-                final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(maintenanceDatabaseConnection, databaseVersionNumber, _requiredDatabaseVersion);
-                if (! upgradeWasSuccessful) {
-                    throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + _requiredDatabaseVersion + ".");
+
+            { // Check/Handle Database Upgrade...
+                final Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection); // Get the updated database version after initialization...
+                if (databaseVersionNumber < _requiredDatabaseVersion) {
+                    final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(maintenanceDatabaseConnection, databaseVersionNumber, _requiredDatabaseVersion);
+                    if (! upgradeWasSuccessful) {
+                        throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + _requiredDatabaseVersion + ".");
+                    }
                 }
             }
         }
