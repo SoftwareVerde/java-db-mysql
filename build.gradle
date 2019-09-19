@@ -23,7 +23,7 @@ repositories {
 dependencies {
     api                 group: 'com.github.softwareverde',  name: 'java-db',                version: 'v3.0.0'
     api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.47'
-    implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.0.0'
+    implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.0.3'
 
     testImplementation  group: 'junit',                     name: 'junit',                  version: '4.11'
     testImplementation  group: 'com.github.softwareverde',  name: 'mariaDB4j',              version: 'v1.0.4'
