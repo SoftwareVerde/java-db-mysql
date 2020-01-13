@@ -1,13 +1,14 @@
 package com.softwareverde.database.mysql;
 
 import com.softwareverde.database.Database;
+import com.softwareverde.database.jdbc.JdbcDatabase;
 import com.softwareverde.database.properties.DatabaseCredentials;
 import com.softwareverde.database.properties.DatabaseProperties;
 
 import java.sql.Connection;
 import java.util.Properties;
 
-public class MysqlDatabase extends MysqlDatabaseConnectionFactory implements Database<Connection> {
+public class MysqlDatabase extends MysqlDatabaseConnectionFactory implements JdbcDatabase {
     public static final Integer DEFAULT_PORT = 3306;
 
     public MysqlDatabase(final DatabaseProperties databaseProperties) {
