@@ -1,7 +1,7 @@
 package com.softwareverde.database.mysql;
 
-import com.softwareverde.database.DatabaseConnectionFactory;
 import com.softwareverde.database.DatabaseException;
+import com.softwareverde.database.jdbc.JdbcDatabaseConnectionFactory;
 import com.softwareverde.database.properties.DatabaseCredentials;
 import com.softwareverde.database.properties.DatabaseProperties;
 import com.softwareverde.util.Util;
@@ -10,7 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
 
-public class MysqlDatabaseConnectionFactory implements DatabaseConnectionFactory<Connection> {
+public class MysqlDatabaseConnectionFactory implements JdbcDatabaseConnectionFactory {
     public static String createConnectionString(final String hostname, final Integer port, final String schema) {
         final StringBuilder stringBuilder = new StringBuilder("jdbc:mysql://");
         stringBuilder.append(Util.coalesce(hostname, "localhost"));
