@@ -7,11 +7,13 @@ import com.softwareverde.database.properties.DatabaseProperties;
 import com.softwareverde.database.query.Query;
 import com.softwareverde.database.row.Row;
 import com.softwareverde.database.util.TransactionUtil;
-import com.softwareverde.util.HashUtil;
 import com.softwareverde.util.IoUtil;
+import com.softwareverde.util.StringUtil;
 
 import java.io.InputStream;
 import java.io.StringReader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.util.List;
 
@@ -20,6 +22,22 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
     protected final String _initSqlFileName;
     protected final Integer _requiredDatabaseVersion;
     protected final DatabaseUpgradeHandler<Connection> _databaseUpgradeHandler;
+
+    protected String _hashPassword(final String password) {
+        try {
+            try {
+                final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+                final byte[] bytes = messageDigest.digest(StringUtil.stringToBytes(password));
+                return StringUtil.bytesToString(bytes);
+            }
+            catch (final NoSuchAlgorithmException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+        catch (final Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
 
     protected String _getResource(final String resourceFile) {
         final ClassLoader classLoader = this.getClass().getClassLoader();
@@ -87,7 +105,7 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
             final String databaseSchema = databaseProperties.getSchema();
             final String newRootPassword = databaseProperties.getRootPassword();
             final String maintenanceUsername = (databaseSchema + "_maintenance");
-            final String maintenancePassword = HashUtil.sha256(newRootPassword);
+            final String maintenancePassword = _hashPassword(newRootPassword);
 
             credentials = new DatabaseCredentials(databaseProperties.getUsername(), databaseProperties.getPassword());
             maintenanceCredentials = new DatabaseCredentials(maintenanceUsername, maintenancePassword);
@@ -133,7 +151,7 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
         final String databaseSchema = databaseProperties.getSchema();
         final String rootPassword = databaseProperties.getRootPassword();
         final String maintenanceUsername = (databaseSchema + "_maintenance");
-        final String maintenancePassword = HashUtil.sha256(rootPassword);
+        final String maintenancePassword = _hashPassword(rootPassword);
 
         return new DatabaseCredentials(maintenanceUsername, maintenancePassword);
     }

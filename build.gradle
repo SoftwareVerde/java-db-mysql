@@ -1,5 +1,5 @@
 group 'com.softwareverde'
-version '4.0.5'
+version '4.0.6'
 
 apply plugin: 'java'
 apply plugin: 'java-library'
@@ -21,9 +21,19 @@ repositories {
 }
 
 dependencies {
-    api                 group: 'com.github.softwareverde',  name: 'java-db',                version: 'v3.2.0'
-    api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.47'
-    implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.0.6'
+    // MySQL Driver 5.1 vs 8.x:
+    //  Pro:
+    //      More configuration parameters to tweak (performance, and redundancy)
+    //  Cons:
+    //      v8 requires extra dependencies (guava, protobuf, deep dependency tree)
+    //      Does not support MySQL < v5.5
+    //      Does not support Java < 8
+    //
+    // https://static.rainfocus.com/oracle/oow19/sess/1560593650733001Xwzz/PF/ConnectorJ_Feature_Review_and_Upgrading_1568911960850001GtUx.pdf
+    api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.48'
+    api                 group: 'com.github.softwareverde',  name: 'java-db',                version: 'v3.2.1'
+
+    implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.1.0'
 
     testImplementation  group: 'junit',                     name: 'junit',                  version: '4.12'
     testImplementation  group: 'com.github.softwareverde',  name: 'mariaDB4j',              version: 'v1.0.5'
