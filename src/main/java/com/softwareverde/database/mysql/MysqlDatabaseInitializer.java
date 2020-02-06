@@ -29,7 +29,8 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
             try {
                 final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
                 final byte[] bytes = messageDigest.digest(StringUtil.stringToBytes(password));
-                return HexUtil.toHexString(bytes);
+                final String uppercaseHexString = HexUtil.toHexString(bytes);
+                return uppercaseHexString.toLowerCase();
             }
             catch (final NoSuchAlgorithmException exception) {
                 throw new RuntimeException(exception);

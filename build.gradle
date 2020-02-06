@@ -1,5 +1,5 @@
 group 'com.softwareverde'
-version '4.0.7'
+version '4.0.8'
 
 apply plugin: 'java'
 apply plugin: 'java-library'
