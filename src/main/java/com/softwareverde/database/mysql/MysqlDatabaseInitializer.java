@@ -7,6 +7,7 @@ import com.softwareverde.database.properties.DatabaseProperties;
 import com.softwareverde.database.query.Query;
 import com.softwareverde.database.row.Row;
 import com.softwareverde.database.util.TransactionUtil;
+import com.softwareverde.util.HexUtil;
 import com.softwareverde.util.IoUtil;
 import com.softwareverde.util.StringUtil;
 
@@ -28,7 +29,7 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
             try {
                 final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
                 final byte[] bytes = messageDigest.digest(StringUtil.stringToBytes(password));
-                return StringUtil.bytesToString(bytes);
+                return HexUtil.toHexString(bytes);
             }
             catch (final NoSuchAlgorithmException exception) {
                 throw new RuntimeException(exception);
