@@ -10,6 +10,7 @@ import com.softwareverde.database.util.TransactionUtil;
 import com.softwareverde.util.HexUtil;
 import com.softwareverde.util.IoUtil;
 import com.softwareverde.util.StringUtil;
+import com.softwareverde.util.type.time.SystemTime;
 
 import java.io.InputStream;
 import java.io.StringReader;
@@ -19,6 +20,7 @@ import java.sql.Connection;
 import java.util.List;
 
 public class MysqlDatabaseInitializer implements com.softwareverde.database.DatabaseInitializer<Connection> {
+    protected final SystemTime _systemTime = new SystemTime();
 
     protected final String _initSqlFileName;
     protected final Integer _requiredDatabaseVersion;
@@ -73,24 +75,24 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
     }
 
     public MysqlDatabaseInitializer() {
-        _initSqlFileName = null;
-        _requiredDatabaseVersion = 1;
-        _databaseUpgradeHandler = new DatabaseUpgradeHandler<Connection>() {
+        this(null, 1, new DatabaseUpgradeHandler<Connection>() {
             @Override
             public Boolean onUpgrade(final DatabaseConnection<Connection> maintenanceDatabaseConnection, final Integer previousVersion, final Integer requiredVersion) {
-                throw new RuntimeException("Database upgrade not supported.");
+                if (requiredVersion != 1) {
+                    throw new RuntimeException("Database upgrade not supported.");
+                }
+
+                return true;
             }
-        };
+        });
     }
 
     public MysqlDatabaseInitializer(final String databaseInitFileName, final Integer requiredDatabaseVersion, final DatabaseUpgradeHandler<Connection> databaseUpgradeHandler) {
-        if (databaseInitFileName != null) {
-            _initSqlFileName = ((databaseInitFileName.startsWith("/") ? "" : "/") + databaseInitFileName);
-        }
-        else {
-            _initSqlFileName = null;
+        if (requiredDatabaseVersion < 1) {
+            throw new IllegalArgumentException("Invalid value for requiredDatabaseVersion; value must be greater than 0.");
         }
 
+        _initSqlFileName = (databaseInitFileName != null ? ((databaseInitFileName.startsWith("/") ? "" : "/") + databaseInitFileName) : null);
         _requiredDatabaseVersion = requiredDatabaseVersion;
         _databaseUpgradeHandler = databaseUpgradeHandler;
     }
@@ -189,6 +191,12 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
                     if (! upgradeWasSuccessful) {
                         throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + _requiredDatabaseVersion + ".");
                     }
+
+                    maintenanceDatabaseConnection.executeSql(
+                        new Query("INSERT INTO metadata (version, timestamp) VALUES (?, ?)")
+                            .setParameter(_requiredDatabaseVersion)
+                            .setParameter(_systemTime.getCurrentTimeInSeconds())
+                    );
                 }
             }
         }
