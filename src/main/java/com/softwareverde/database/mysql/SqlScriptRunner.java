@@ -23,14 +23,20 @@
  *      2019-01 - Cloned from: https://github.com/BenoitDuffez/ScriptRunner
  *      2019-01 - Rollbacks aren't attempted if autocommit is set to true.
  *      2019-07 - Renamed to SqlScriptRunner.
+ *      2021-01 - Removed sql log creation.
  *
  */
 
 package com.softwareverde.database.mysql;
 
-import java.io.*;
-import java.sql.*;
-import java.text.SimpleDateFormat;
+import com.softwareverde.logging.Logger;
+
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.Reader;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,11 +57,6 @@ public class SqlScriptRunner {
     private final boolean stopOnError;
     private final boolean autoCommit;
 
-    @SuppressWarnings("UseOfSystemOutOrSystemErr")
-    private PrintWriter logWriter = null;
-    @SuppressWarnings("UseOfSystemOutOrSystemErr")
-    private PrintWriter errorLogWriter = null;
-
     private String delimiter = DEFAULT_DELIMITER;
     private boolean fullLineDelimiter = false;
 
@@ -67,52 +68,11 @@ public class SqlScriptRunner {
         this.connection = connection;
         this.autoCommit = autoCommit;
         this.stopOnError = stopOnError;
-        File logFile = new File("create_db.log");
-        File errorLogFile = new File("create_db_error.log");
-        try {
-            if (logFile.exists()) {
-                logWriter = new PrintWriter(new FileWriter(logFile, true));
-            } else {
-                logWriter = new PrintWriter(new FileWriter(logFile, false));
-            }
-        } catch(IOException e){
-            System.err.println("Unable to access or create the db_create log");
-        }
-        try {
-            if (errorLogFile.exists()) {
-                errorLogWriter = new PrintWriter(new FileWriter(errorLogFile, true));
-            } else {
-                errorLogWriter = new PrintWriter(new FileWriter(errorLogFile, false));
-            }
-        } catch(IOException e){
-            System.err.println("Unable to access or create the db_create error log");
-        }
-        String timeStamp = new SimpleDateFormat("dd/mm/yyyy HH:mm:ss").format(new java.util.Date());
-        println("\n-------\n" + timeStamp + "\n-------\n");
-        printlnError("\n-------\n" + timeStamp + "\n-------\n");
     }
 
     public void setDelimiter(String delimiter, boolean fullLineDelimiter) {
         this.delimiter = delimiter;
         this.fullLineDelimiter = fullLineDelimiter;
-    }
-
-    /**
-     * Setter for logWriter property
-     *
-     * @param logWriter - the new value of the logWriter property
-     */
-    public void setLogWriter(PrintWriter logWriter) {
-        this.logWriter = logWriter;
-    }
-
-    /**
-     * Setter for errorLogWriter property
-     *
-     * @param errorLogWriter - the new value of the errorLogWriter property
-     */
-    public void setErrorLogWriter(PrintWriter errorLogWriter) {
-        this.errorLogWriter = errorLogWriter;
     }
 
     /**
@@ -165,9 +125,6 @@ public class SqlScriptRunner {
                 } else if (delimMatch.matches()) {
                     setDelimiter(delimMatch.group(2), false);
                 } else if (trimmedLine.startsWith("--")) {
-                    println(trimmedLine);
-                } else if (trimmedLine.length() < 1
-                        || trimmedLine.startsWith("--")) {
                     // Do nothing
                 } else if (!fullLineDelimiter
                         && trimmedLine.endsWith(getDelimiter())
@@ -196,15 +153,12 @@ public class SqlScriptRunner {
             if (! this.autoCommit) {
                 conn.rollback();
             }
-            flush();
         }
     }
 
     private void execCommand(Connection conn, StringBuffer command,
                              LineNumberReader lineReader) throws SQLException {
         Statement statement = conn.createStatement();
-
-        println(command);
 
         boolean hasResults = false;
         try {
@@ -223,24 +177,6 @@ public class SqlScriptRunner {
             conn.commit();
         }
 
-        ResultSet rs = statement.getResultSet();
-        if (hasResults && rs != null) {
-            ResultSetMetaData md = rs.getMetaData();
-            int cols = md.getColumnCount();
-            for (int i = 1; i <= cols; i++) {
-                String name = md.getColumnLabel(i);
-                print(name + "\t");
-            }
-            println("");
-            while (rs.next()) {
-                for (int i = 1; i <= cols; i++) {
-                    String value = rs.getString(i);
-                    print(value + "\t");
-                }
-                println("");
-            }
-        }
-
         try {
             statement.close();
         } catch (Exception e) {
@@ -252,32 +188,7 @@ public class SqlScriptRunner {
         return delimiter;
     }
 
-    @SuppressWarnings("UseOfSystemOutOrSystemErr")
-
-    private void print(Object o) {
-        if (logWriter != null) {
-            logWriter.print(o);
-        }
-    }
-
-    private void println(Object o) {
-        if (logWriter != null) {
-            logWriter.println(o);
-        }
-    }
-
     private void printlnError(Object o) {
-        if (errorLogWriter != null) {
-            errorLogWriter.println(o);
-        }
-    }
-
-    private void flush() {
-        if (logWriter != null) {
-            logWriter.flush();
-        }
-        if (errorLogWriter != null) {
-            errorLogWriter.flush();
-        }
+        Logger.error(o);
     }
 }
