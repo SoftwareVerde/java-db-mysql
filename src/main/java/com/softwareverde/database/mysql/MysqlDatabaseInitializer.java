@@ -88,7 +88,7 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
     }
 
     public MysqlDatabaseInitializer(final String databaseInitFileName, final Integer requiredDatabaseVersion, final DatabaseUpgradeHandler<Connection> databaseUpgradeHandler) {
-        if (requiredDatabaseVersion < 1) {
+        if (requiredDatabaseVersion != null && requiredDatabaseVersion < 1) {
             throw new IllegalArgumentException("Invalid value for requiredDatabaseVersion; value must be greater than 0.");
         }
 
@@ -184,19 +184,21 @@ public class MysqlDatabaseInitializer implements com.softwareverde.database.Data
                 }
             }
 
-            { // Check/Handle Database Upgrade...
-                final Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection); // Get the updated database version after initialization...
-                if (databaseVersionNumber < _requiredDatabaseVersion) {
-                    final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(maintenanceDatabaseConnection, databaseVersionNumber, _requiredDatabaseVersion);
+            if (_requiredDatabaseVersion != null) { // Check/Handle Database Upgrade...
+                Integer databaseVersionNumber = _getDatabaseVersionNumber(maintenanceDatabaseConnection); // Get the updated database version after initialization...
+                while (databaseVersionNumber < _requiredDatabaseVersion) {
+                    final Integer nextVersionNumber = databaseVersionNumber + 1;
+                    final Boolean upgradeWasSuccessful = _databaseUpgradeHandler.onUpgrade(maintenanceDatabaseConnection, databaseVersionNumber, nextVersionNumber);
                     if (! upgradeWasSuccessful) {
-                        throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + _requiredDatabaseVersion + ".");
+                        throw new RuntimeException("Unable to upgrade database from v" + databaseVersionNumber + " to v" + nextVersionNumber + ".");
                     }
 
                     maintenanceDatabaseConnection.executeSql(
                         new Query("INSERT INTO metadata (version, timestamp) VALUES (?, ?)")
-                            .setParameter(_requiredDatabaseVersion)
+                            .setParameter(nextVersionNumber)
                             .setParameter(_systemTime.getCurrentTimeInSeconds())
                     );
+                    databaseVersionNumber = nextVersionNumber;
                 }
             }
         }
