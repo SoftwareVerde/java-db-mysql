@@ -24,12 +24,14 @@
  *      2019-01 - Rollbacks aren't attempted if autocommit is set to true.
  *      2019-07 - Renamed to SqlScriptRunner.
  *      2021-01 - Removed sql log creation.
+ *      2021-05 - FIX: scripts ending with setting the SQL delimiter no longer attempt to execute an empty command.
  *
  */
 
 package com.softwareverde.database.mysql;
 
 import com.softwareverde.logging.Logger;
+import com.softwareverde.util.Util;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -156,31 +158,26 @@ public class SqlScriptRunner {
         }
     }
 
-    private void execCommand(Connection conn, StringBuffer command,
-                             LineNumberReader lineReader) throws SQLException {
-        Statement statement = conn.createStatement();
+    private void execCommand(Connection conn, StringBuffer command, LineNumberReader lineReader) throws SQLException {
+        final String commandString = (command != null ? command.toString() : null);
+        if (Util.isBlank(commandString)) { return; }
 
-        boolean hasResults = false;
-        try {
-            hasResults = statement.execute(command.toString());
-        } catch (SQLException e) {
-            final String errText = String.format("Error executing '%s' (line %d): %s",
-                    command, lineReader.getLineNumber(), e.getMessage());
-            printlnError(errText);
-            System.err.println(errText);
-            if (stopOnError) {
-                throw new SQLException(errText, e);
+        try (Statement statement = conn.createStatement()) {
+            try {
+                statement.execute(commandString);
             }
-        }
+            catch (SQLException e) {
+                final String errText = String.format("Error executing '%s' (line %d): %s", commandString, lineReader.getLineNumber(), e.getMessage());
+                printlnError(errText);
 
-        if (autoCommit && !conn.getAutoCommit()) {
-            conn.commit();
-        }
+                if (stopOnError) {
+                    throw new SQLException(errText, e);
+                }
+            }
 
-        try {
-            statement.close();
-        } catch (Exception e) {
-            // Ignore to workaround a bug in Jakarta DBCP
+            if (autoCommit && !conn.getAutoCommit()) {
+                conn.commit();
+            }
         }
     }
 
