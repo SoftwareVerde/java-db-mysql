@@ -1,17 +1,22 @@
-group 'com.softwareverde'
-version '4.2.2'
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+}
 
-apply plugin: 'java'
-apply plugin: 'java-library'
+group = 'com.softwareverde'
+version = '4.2.2'
 
-sourceCompatibility = 1.8
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 task makeJar(type: Jar) {
     manifest {
         attributes  'Implementation-Title': 'Java Database MySQL Wrapper',
                     'Implementation-Version': archiveVersion
     }
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
@@ -82,4 +87,12 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
     archives sourcesJar
     archives javadocJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
 }
