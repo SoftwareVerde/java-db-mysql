@@ -5,11 +5,11 @@ plugins {
 }
 
 group = 'com.softwareverde'
-version = '4.2.2'
+version = '4.3.0'
 
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 task makeJar(type: Jar) {
@@ -35,13 +35,12 @@ dependencies {
     //      Does not support Java < 8
     //
     // https://static.rainfocus.com/oracle/oow19/sess/1560593650733001Xwzz/PF/ConnectorJ_Feature_Review_and_Upgrading_1568911960850001GtUx.pdf
-    api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '5.1.49'
+    api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '8.0.31'
     api                 group: 'com.github.softwareverde',  name: 'java-db',                version: 'v3.3.0'
 
     implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.7.2'
 
     testImplementation  group: 'junit',                     name: 'junit',                  version: '4.12'
-    testImplementation  group: 'com.github.softwareverde',  name: 'mariaDB4j',              version: 'v1.0.5'
 }
 
 tasks.withType(Test) {
