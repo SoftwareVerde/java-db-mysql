@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.softwareverde'
-version = '4.3.0'
+version = '4.3.1'
 
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -35,7 +35,7 @@ dependencies {
     //      Does not support Java < 8
     //
     // https://static.rainfocus.com/oracle/oow19/sess/1560593650733001Xwzz/PF/ConnectorJ_Feature_Review_and_Upgrading_1568911960850001GtUx.pdf
-    api                 group: 'mysql',                     name: 'mysql-connector-java',   version: '8.0.31'
+    api                 group: 'org.mariadb.jdbc',          name: 'mariadb-java-client',    version: '3.1.1'
     api                 group: 'com.github.softwareverde',  name: 'java-db',                version: 'v3.3.0'
 
     implementation      group: 'com.github.softwareverde',  name: 'java-util',              version: 'v2.7.2'

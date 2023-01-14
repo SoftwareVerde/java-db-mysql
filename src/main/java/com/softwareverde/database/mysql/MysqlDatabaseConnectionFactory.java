@@ -40,7 +40,7 @@ public class MysqlDatabaseConnectionFactory implements JdbcDatabaseConnectionFac
      * Require dependencies be packaged at compile-time.
      */
     private static final Class[] UNUSED = {
-        com.mysql.jdbc.Driver.class
+        org.mariadb.jdbc.Driver.class
     };
 
     protected final String _hostname;
@@ -82,7 +82,7 @@ public class MysqlDatabaseConnectionFactory implements JdbcDatabaseConnectionFac
     @Override
     public MysqlDatabaseConnection newConnection() throws DatabaseException {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("org.mariadb.jdbc.Driver");
             final String connectionString = MysqlDatabaseConnectionFactory.createConnectionString(_hostname, _port, _schema);
 
             final Properties connectionProperties = new Properties(_connectionProperties);
